@@ -1,4 +1,4 @@
-import type { Action } from './types.js';
+import type { Action, ClientFilter } from './types.js';
 
 const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL ?? 'http://localhost:8080';
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY ?? '';
@@ -15,7 +15,8 @@ function fail(text: string): McpResult {
 
 export async function callEvolution(
   action: Action,
-  params: Record<string, unknown>
+  params: Record<string, unknown>,
+  clientFilter?: ClientFilter
 ): Promise<McpResult> {
   try {
     // 1. Substitute path params
@@ -89,15 +90,32 @@ export async function callEvolution(
       return ok(responseText);
     }
 
-    // 6. Truncate large responses
-    const serialized = JSON.stringify(data, null, 2);
+    // 6. Apply client-side filter if requested
+    let filtered: unknown = data;
+    if (clientFilter && Array.isArray(data)) {
+      const { field, contains, mode } = clientFilter;
+      const needle = mode === 'insensitive' ? contains.toLowerCase() : contains;
+      filtered = data.filter((item: unknown) => {
+        if (typeof item !== 'object' || item === null) return false;
+        const val = (item as Record<string, unknown>)[field];
+        if (typeof val !== 'string') return false;
+        const hay = mode === 'insensitive' ? val.toLowerCase() : val;
+        return hay.includes(needle);
+      });
+    }
+
+    // 7. Truncate large responses
+    const serialized = JSON.stringify(filtered, null, 2);
+    const originalCount = Array.isArray(data) ? data.length : null;
+    const filteredCount = Array.isArray(filtered) ? filtered.length : null;
+
     if (serialized.length > 10_000) {
-      if (Array.isArray(data)) {
-        const truncated = data.slice(0, 20);
-        return ok(
-          JSON.stringify(truncated, null, 2) +
-            `\n\n[Resposta truncada — mostrando 20 de ${data.length} itens]`
-        );
+      if (Array.isArray(filtered)) {
+        const truncated = (filtered as unknown[]).slice(0, 20);
+        const label = clientFilter
+          ? `\n\n[Filtro aplicado: ${filteredCount} de ${originalCount} itens. Mostrando 20.]`
+          : `\n\n[Resposta truncada — mostrando 20 de ${originalCount} itens]`;
+        return ok(JSON.stringify(truncated, null, 2) + label);
       }
       return ok(
         serialized.slice(0, 10_000) +
@@ -105,10 +123,13 @@ export async function callEvolution(
       );
     }
 
-    // 7. Success
+    // 8. Success — include filter summary if applied
+    if (clientFilter && Array.isArray(data)) {
+      return ok(serialized + `\n\n[Filtro aplicado: ${filteredCount} de ${originalCount} itens]`);
+    }
+
     return ok(serialized);
   } catch (err) {
-    // 8. Network errors
     const message = err instanceof Error ? err.message : String(err);
     return fail(`Erro de rede: ${message}`);
   }

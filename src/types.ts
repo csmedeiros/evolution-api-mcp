@@ -19,3 +19,9 @@ export interface Action {
   summary: string;
   params: Param[];
 }
+
+export type ClientFilter = {
+  field: string;
+  contains: string;
+  mode?: 'insensitive' | 'sensitive';
+};
