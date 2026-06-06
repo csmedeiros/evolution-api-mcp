@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { catalog } from './catalog.js';
 import { callEvolution } from './client.js';
+import type { ClientFilter } from './types.js';
 
 // Validate required env var at boot
 if (!process.env.EVOLUTION_API_KEY) {
@@ -106,13 +107,18 @@ server.tool(
 // 4. execute_read_action
 server.tool(
   'execute_read_action',
-  'Executa uma action de LEITURA (readOnly: true) da Evolution API. Recebe o actionId e os params necessários. Para saber quais params usar, chame search_actions ou get_action_schema primeiro. NÃO execute ações de escrita aqui — use execute_write_action.',
+  'Executa uma action de LEITURA (readOnly: true) da Evolution API. Recebe o actionId e os params necessários. Para saber quais params usar, chame search_actions ou get_action_schema primeiro. NÃO execute ações de escrita aqui — use execute_write_action. Opcional: clientFilter={field, contains, mode} para filtrar arrays grandes client-side antes do truncamento (ex: buscar contatos por pushName parcial).',
   {
     actionId: z.string(),
     params: z.record(z.unknown()).default({}),
+    clientFilter: z.object({
+      field: z.string(),
+      contains: z.string(),
+      mode: z.enum(['insensitive', 'sensitive']).optional(),
+    }).optional(),
   },
   { readOnlyHint: true },
-  async ({ actionId, params }) => {
+  async ({ actionId, params, clientFilter }) => {
     const action = catalog.find(a => a.id === actionId);
     if (!action) {
       return {
@@ -126,7 +132,7 @@ server.tool(
         content: [{ type: 'text' as const, text: 'Esta action é de escrita. Use execute_write_action.' }],
       };
     }
-    return callEvolution(action, params);
+    return callEvolution(action, params, clientFilter as ClientFilter | undefined);
   }
 );
 
