@@ -9,20 +9,23 @@ MCP server for the [Evolution API](https://github.com/evolution-foundation/evolu
 - Node.js 20+
 - Evolution API running locally or on a server
 
-### Install dependencies and build
+### Clone and build
 
 ```bash
-cd ~/Documents/evolution-api-mcp
+git clone https://github.com/evolution-foundation/evolution-api-mcp.git
+cd evolution-api-mcp
 npm install && npm run build
 ```
 
 ### Register in Claude Code
 
 ```bash
-claude mcp add evolution-api -- node ~/Documents/evolution-api-mcp/dist/server.js \
+claude mcp add evolution-api -- node /absolute/path/to/evolution-api-mcp/dist/server.js \
   --env EVOLUTION_API_URL=http://localhost:8080 \
   --env EVOLUTION_API_KEY=your_api_key
 ```
+
+Replace `/absolute/path/to/evolution-api-mcp` with the directory where you cloned the repository.
 
 ## Available Tools
 
