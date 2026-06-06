@@ -2,7 +2,11 @@
 import { catalog } from '../src/catalog.js';
 import { callEvolution } from '../src/client.js';
 
-const action = catalog.find(a => a.id === 'instance.fetchInstances')!;
+const action = catalog.find(a => a.id === 'instance.fetchInstances');
+if (!action) {
+  console.error('SMOKE FAIL: Action instance.fetchInstances não encontrada no catálogo');
+  process.exit(1);
+}
 const result = await callEvolution(action, {});
 
 if (result.isError) {

@@ -33,7 +33,8 @@ server.tool(
   'Lista todas as instâncias WhatsApp e seus estados de conexão. Use esta tool primeiro para descobrir as instâncias disponíveis antes de qualquer operação.',
   { readOnlyHint: true },
   async () => {
-    const action = catalog.find(a => a.id === 'instance.fetchInstances')!;
+    const action = catalog.find(a => a.id === 'instance.fetchInstances');
+    if (!action) return { isError: true, content: [{ type: 'text' as const, text: 'Action instance.fetchInstances não encontrada no catálogo' }] };
     return callEvolution(action, {});
   }
 );

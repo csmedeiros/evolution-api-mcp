@@ -20,12 +20,12 @@ export async function callEvolution(
   try {
     // 1. Substitute path params
     let path = action.path;
-    const pathParamNames = new Set(
-      action.params.filter(p => p.in === 'path').map(p => p.name)
-    );
-    for (const name of pathParamNames) {
-      if (params[name] !== undefined) {
-        path = path.replace(`:${name}`, String(params[name]));
+    const pathParamDefs = action.params.filter(p => p.in === 'path');
+    for (const p of pathParamDefs) {
+      if (params[p.name] !== undefined) {
+        path = path.replace(`:${p.name}`, String(params[p.name]));
+      } else if (p.required) {
+        return fail(`Param obrigatório ausente no path: ${p.name}`);
       }
     }
 
@@ -52,14 +52,27 @@ export async function callEvolution(
 
     // 4. Fetch
     const hasBody = Object.keys(bodyParams).length > 0 && action.method !== 'GET';
-    const response = await fetch(url, {
-      method: action.method,
-      headers: {
-        apikey: EVOLUTION_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: hasBody ? JSON.stringify(bodyParams) : undefined,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: action.method,
+        headers: {
+          apikey: EVOLUTION_API_KEY,
+          ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: hasBody ? JSON.stringify(bodyParams) : undefined,
+        signal: controller.signal,
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+        return fail('Timeout: a Evolution API não respondeu em 30 segundos');
+      }
+      throw fetchErr;
+    }
+    clearTimeout(timeoutId);
 
     const responseText = await response.text();
 
@@ -86,8 +99,9 @@ export async function callEvolution(
             `\n\n[Resposta truncada — mostrando 20 de ${data.length} itens]`
         );
       }
-      return fail(
-        `Resposta truncada (${serialized.length} chars). Refine com filtros/limit.`
+      return ok(
+        serialized.slice(0, 10_000) +
+          `\n\n[Resposta truncada — ${serialized.length} chars no total. Refine com filtros/limit.]`
       );
     }
 
