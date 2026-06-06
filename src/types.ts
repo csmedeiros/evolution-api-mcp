@@ -1,9 +1,11 @@
 export type ParamLocation = 'path' | 'query' | 'body';
 
+export type ParamType = 'string' | 'number' | 'boolean' | 'object' | 'array';
+
 export interface Param {
   name: string;
   in: ParamLocation;
-  type: string;
+  type: ParamType;
   required: boolean;
   desc: string;
 }
