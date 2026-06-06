@@ -1,0 +1,17 @@
+{
+  "name": "evolution-api",
+  "description": "Skills para operar a Evolution API (WhatsApp) via o MCP evolution-api: instâncias, mensagens, chats, grupos, eventos/webhooks e chatbots de IA.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Caio Medeiros",
+    "email": "caio.s.medeiros@outlook.com"
+  },
+  "keywords": [
+    "evolution-api",
+    "whatsapp",
+    "mcp",
+    "messaging",
+    "chatbot",
+    "skills"
+  ]
+}

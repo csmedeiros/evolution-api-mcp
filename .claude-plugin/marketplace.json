@@ -1,0 +1,14 @@
+{
+  "name": "evolution-api-mcp",
+  "owner": {
+    "name": "Caio Medeiros",
+    "email": "caio.s.medeiros@outlook.com"
+  },
+  "plugins": [
+    {
+      "name": "evolution-api",
+      "source": "./plugin",
+      "description": "Skills para operar a Evolution API (WhatsApp) via o MCP evolution-api: instâncias, mensagens, chats, grupos, eventos/webhooks e chatbots de IA."
+    }
+  ]
+}
