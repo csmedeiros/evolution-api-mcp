@@ -1,62 +1,62 @@
 # evolution-api-mcp
 
-MCP server para a [Evolution API](https://github.com/evolution-foundation/evolution-api) — acesse 160+ endpoints WhatsApp via linguagem natural no Claude Code.
+MCP server for the [Evolution API](https://github.com/evolution-foundation/evolution-api) — access 160+ WhatsApp endpoints via natural language in Claude Code.
 
-## Instalação
+## Installation
 
-### Pré-requisitos
+### Prerequisites
 
 - Node.js 20+
-- Evolution API rodando localmente ou em servidor
+- Evolution API running locally or on a server
 
-### Instalar dependências e fazer build
+### Install dependencies and build
 
 ```bash
 cd ~/Documents/evolution-api-mcp
 npm install && npm run build
 ```
 
-### Registrar no Claude Code
+### Register in Claude Code
 
 ```bash
 claude mcp add evolution-api -- node ~/Documents/evolution-api-mcp/dist/server.js \
   --env EVOLUTION_API_URL=http://localhost:8080 \
-  --env EVOLUTION_API_KEY=sua_api_key
+  --env EVOLUTION_API_KEY=your_api_key
 ```
 
-## Tools disponíveis
+## Available Tools
 
-| Tool | Descrição |
-|------|-----------|
-| `list_instances` | Lista instâncias WhatsApp e seus estados de conexão |
-| `search_actions` | Busca endpoints por intenção em linguagem natural |
-| `get_action_schema` | Retorna schema completo de um endpoint por ID |
-| `execute_read_action` | Executa operações de leitura (GET, consultas) |
-| `execute_write_action` | Executa operações de escrita (enviar mensagem, criar instância, etc.) |
+| Tool | Description |
+|------|-------------|
+| `list_instances` | Lists WhatsApp instances and their connection states |
+| `search_actions` | Searches endpoints by intent in natural language |
+| `get_action_schema` | Returns the full schema of an endpoint by ID |
+| `execute_read_action` | Executes read operations (GET, queries) |
+| `execute_write_action` | Executes write operations (send message, create instance, etc.) |
 
-## Exemplos de uso
+## Usage Examples
 
-Após registrar, em uma nova sessão do Claude Code:
+After registering, in a new Claude Code session:
 
-- "liste minhas instâncias WhatsApp"
-- "como envio uma mensagem de texto?"
-- "crie uma instância chamada meu-bot"
-- "envie 'Olá!' para 5511999999999 via instância meu-bot"
-- "qual o estado de conexão da instância meu-bot?"
+- "list my WhatsApp instances"
+- "how do I send a text message?"
+- "create an instance called my-bot"
+- "send 'Hello!' to 5511999999999 via instance my-bot"
+- "what is the connection state of instance my-bot?"
 
-## Domínios cobertos
+## Covered Domains
 
 `instance` · `message` · `chat` · `group` · `call` · `settings` · `label` · `proxy` · `webhook` · `websocket` · `rabbitmq` · `nats` · `pusher` · `sqs` · `kafka` · `chatwoot` · `evolutionBot` · `typebot` · `openai` · `dify` · `flowise` · `n8n` · `evoai`
 
-## Variáveis de ambiente
+## Environment Variables
 
-| Variável | Padrão | Descrição |
-|----------|--------|-----------|
-| `EVOLUTION_API_URL` | `http://localhost:8080` | URL base da Evolution API |
-| `EVOLUTION_API_KEY` | — | API key (obrigatória) |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EVOLUTION_API_URL` | `http://localhost:8080` | Evolution API base URL |
+| `EVOLUTION_API_KEY` | — | API key (required) |
 
-## Smoke test
+## Smoke Test
 
 ```bash
-EVOLUTION_API_KEY=sua_key npm run smoke
+EVOLUTION_API_KEY=your_key npm run smoke
 ```

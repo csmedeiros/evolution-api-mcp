@@ -1,86 +1,86 @@
 ---
 name: evolution-api-workflow
-description: Use SEMPRE que a tarefa envolver WhatsApp via Evolution API (enviar mensagem, instância WhatsApp, grupo, webhook, chatbot) e o MCP evolution-api estiver disponível. Ensina o fluxo de descoberta list→search→schema→execute e o split read/write. Carregue esta skill ANTES de chamar qualquer tool do MCP evolution-api.
+description: Use ALWAYS when the task involves WhatsApp via Evolution API (send message, WhatsApp instance, group, webhook, chatbot) and the evolution-api MCP is available. Teaches the discovery flow list→search→schema→execute and the read/write split. Load this skill BEFORE calling any evolution-api MCP tool.
 ---
 
-# Evolution API — Fluxo de Trabalho
+# Evolution API — Workflow
 
-## Visão geral
+## Overview
 
-O MCP `evolution-api` expõe **5 tools** sobre um catálogo de **158 actions** (endpoints WhatsApp).
-Você NUNCA chama um endpoint pelo nome de memória — você **descobre** o `actionId` e seus params via tools de busca, depois executa.
+The `evolution-api` MCP exposes **5 tools** over a catalog of **158 actions** (WhatsApp endpoints).
+You NEVER call an endpoint by memory — you **discover** the `actionId` and its params via search tools, then execute.
 
-**Princípio central:** descubra antes de executar. Nunca invente `actionId` ou params — confirme com `get_action_schema`.
+**Core principle:** discover before executing. Never invent `actionId` or params — confirm with `get_action_schema`.
 
-## As 5 tools
+## The 5 Tools
 
-| Tool | Quando usar |
+| Tool | When to use |
 |------|-------------|
-| `list_instances` | SEMPRE primeiro. Lista instâncias WhatsApp e estado de conexão. Quase toda action precisa de um `instance`. |
-| `search_actions` | Descobrir o `actionId` por intenção em linguagem natural. Aceita `query`, `domain` opcional, `limit`. |
-| `get_action_schema` | Ver todos os params (tipo, obrigatoriedade, descrição) de um `actionId` antes de executar. |
-| `execute_read_action` | Executar action de **leitura** (`readOnly: true`). |
-| `execute_write_action` | Executar action de **escrita/mutação** (`readOnly: false`) — enviar msg, criar/deletar instância, configurar webhook. |
+| `list_instances` | ALWAYS first. Lists WhatsApp instances and connection state. Almost every action needs an `instance`. |
+| `search_actions` | Discover the `actionId` by intent in natural language. Accepts `query`, optional `domain`, `limit`. |
+| `get_action_schema` | See all params (type, required, description) of an `actionId` before executing. |
+| `execute_read_action` | Execute a **read** action (`readOnly: true`). |
+| `execute_write_action` | Execute a **write/mutation** action (`readOnly: false`) — send message, create/delete instance, configure webhook. |
 
-## O fluxo (siga em ordem)
+## The Flow (follow in order)
 
 ```dot
 digraph evo {
-  "Tarefa WhatsApp" [shape=doublecircle];
+  "WhatsApp Task" [shape=doublecircle];
   "list_instances" [shape=box];
-  "Instância existe?" [shape=diamond];
+  "Instance exists?" [shape=diamond];
   "search_actions(query, domain)" [shape=box];
   "get_action_schema(actionId)" [shape=box];
-  "É leitura ou escrita?" [shape=diamond];
+  "Read or write?" [shape=diamond];
   "execute_read_action" [shape=box];
-  "Escrita destrutiva? Confirmar com usuário" [shape=box];
+  "Destructive write? Confirm with user" [shape=box];
   "execute_write_action" [shape=box];
 
-  "Tarefa WhatsApp" -> "list_instances";
-  "list_instances" -> "Instância existe?";
-  "Instância existe?" -> "search_actions(query, domain)" [label="sim"];
-  "Instância existe?" -> "search_actions(query, domain)" [label="não → busque instance.create"];
+  "WhatsApp Task" -> "list_instances";
+  "list_instances" -> "Instance exists?";
+  "Instance exists?" -> "search_actions(query, domain)" [label="yes"];
+  "Instance exists?" -> "search_actions(query, domain)" [label="no → search instance.create"];
   "search_actions(query, domain)" -> "get_action_schema(actionId)";
-  "get_action_schema(actionId)" -> "É leitura ou escrita?";
-  "É leitura ou escrita?" -> "execute_read_action" [label="readOnly:true"];
-  "É leitura ou escrita?" -> "Escrita destrutiva? Confirmar com usuário" [label="readOnly:false"];
-  "Escrita destrutiva? Confirmar com usuário" -> "execute_write_action";
+  "get_action_schema(actionId)" -> "Read or write?";
+  "Read or write?" -> "execute_read_action" [label="readOnly:true"];
+  "Read or write?" -> "Destructive write? Confirm with user" [label="readOnly:false"];
+  "Destructive write? Confirm with user" -> "execute_write_action";
 }
 ```
 
-### Passos
+### Steps
 
-1. **`list_instances`** — descubra quais instâncias existem e seu estado (`open` = conectada, `connecting`, `close`). Toda action precisa do nome da instância no param `instance`.
-2. **`search_actions`** — passe a intenção em linguagem natural. Restrinja com `domain` quando souber (acelera e reduz ruído). Domínios válidos: `instance`, `message`, `chat`, `group`, `call`, `settings`, `label`, `proxy`, `event`, `chatbot`.
-3. **`get_action_schema`** — com o `actionId` candidato, confirme os params **obrigatórios** e seus tipos. Não pule este passo para actions de escrita.
-4. **Executar** — escolha a tool certa pelo `readOnly` da action:
+1. **`list_instances`** — discover which instances exist and their state (`open` = connected, `connecting`, `close`). Every action needs the instance name in the `instance` param.
+2. **`search_actions`** — pass the intent in natural language. Restrict with `domain` when known (faster and less noise). Valid domains: `instance`, `message`, `chat`, `group`, `call`, `settings`, `label`, `proxy`, `event`, `chatbot`.
+3. **`get_action_schema`** — with the candidate `actionId`, confirm the **required** params and their types. Do not skip this step for write actions.
+4. **Execute** — choose the right tool by the action's `readOnly`:
    - `readOnly: true` → `execute_read_action`
    - `readOnly: false` → `execute_write_action`
-   - Chamar na tool errada retorna erro orientando a tool correta — não force.
+   - Calling the wrong tool returns an error pointing to the correct one — do not force it.
 
-## Regras rígidas
+## Hard Rules
 
-- **NUNCA chute um `actionId`.** Sempre venha de `search_actions`. Se a busca não trouxer, refine a query (termos PT e EN, ex.: "enviar texto" e depois "send text").
-- **Read/write split é obrigatório.** Leitura → `execute_read_action`. Escrita → `execute_write_action`. Não tente leitura na write nem vice-versa.
-- **Confirmação para destrutivo.** Antes de `instance.delete`, `instance.logout`, `chat.deleteMessageForEveryone`, `group.leaveGroup`, `*.delete` ou qualquer envio em massa: confirme alvo e conteúdo com o usuário. Enviar mensagem WhatsApp é uma ação externa irreversível.
-- **Param `instance` sempre presente** em quase toda action (exceto `list_instances` e `instance.create`/`fetchInstances`). Pegue o nome de `list_instances`, não do que o usuário "acha" que é.
-- **Números** vão com DDI, só dígitos: `5511999999999`. Sem `+`, sem espaços, sem traços.
+- **NEVER guess an `actionId`.** Always get it from `search_actions`. If the search returns nothing, refine the query (try in both English and Portuguese, e.g. "send text" then "enviar texto").
+- **Read/write split is mandatory.** Read → `execute_read_action`. Write → `execute_write_action`. Don't attempt reads on the write tool or vice versa.
+- **Confirmation for destructive actions.** Before `instance.delete`, `instance.logout`, `chat.deleteMessageForEveryone`, `group.leaveGroup`, `*.delete`, or any bulk send: confirm the target and content with the user. Sending a WhatsApp message is an irreversible external action.
+- **The `instance` param is almost always required** in every action (except `list_instances` and `instance.create`/`fetchInstances`). Get the name from `list_instances`, not from what the user "thinks" it is.
+- **Phone numbers** must include country code, digits only: `5511999999999`. No `+`, no spaces, no dashes.
 
-## Skills por domínio
+## Skills by Domain
 
-Para tarefas específicas, carregue também:
+For specific tasks, also load:
 
-- `evolution-instances` — criar/conectar (QR code)/reiniciar/deletar instâncias e ler estado.
-- `evolution-messaging` — enviar texto, mídia, áudio, enquete, lista, botões, reação, localização, contato.
-- `evolution-chat-groups` — chats, contatos, perfil, privacidade, e operações de grupo.
-- `evolution-events-webhooks` — webhook, websocket e filas (rabbitmq, nats, sqs, kafka, pusher).
-- `evolution-chatbots` — integrações de IA: openai, dify, flowise, n8n, typebot, evolutionBot, evoai, chatwoot.
+- `evolution-instances` — create/connect (QR code)/restart/delete instances and read state.
+- `evolution-messaging` — send text, media, audio, poll, list, buttons, reaction, location, contact.
+- `evolution-chat-groups` — chats, contacts, profile, privacy, and group operations.
+- `evolution-events-webhooks` — webhook, websocket, and queues (rabbitmq, nats, sqs, kafka, pusher).
+- `evolution-chatbots` — AI integrations: openai, dify, flowise, n8n, typebot, evolutionBot, evoai, chatwoot.
 
-## Erros comuns
+## Common Errors
 
-| Sintoma | Causa | Correção |
-|---------|-------|----------|
-| "Action 'X' não encontrada no catálogo" | actionId inventado/errado | Use `search_actions` para obter o id real. |
-| "Esta action é de escrita. Use execute_write_action." | tool errada | Troque para `execute_write_action`. |
-| Erro 404/instance | nome de instância errado | Rode `list_instances` e use o nome exato. |
-| Mensagem não chega | instância em `close`/`connecting` | Conecte a instância (ver `evolution-instances`). |
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| "Action 'X' not found in catalog" | Invented/wrong actionId | Use `search_actions` to get the real id. |
+| "This action is a write. Use execute_write_action." | Wrong tool | Switch to `execute_write_action`. |
+| 404/instance error | Wrong instance name | Run `list_instances` and use the exact name. |
+| Message not delivered | Instance in `close`/`connecting` | Connect the instance (see `evolution-instances`). |

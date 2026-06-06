@@ -1,49 +1,49 @@
 ---
 name: evolution-chatbots
-description: Use ao configurar integrações de chatbot/IA na Evolution API — OpenAI, Dify, Flowise, n8n, Typebot, EvolutionBot, EvoAI ou Chatwoot. Criar/atualizar/deletar bots, ajustar settings, mudar status, listar sessões, ignorar JIDs. Cobre o domínio `chatbot`.
+description: Use when configuring chatbot/AI integrations in the Evolution API — OpenAI, Dify, Flowise, n8n, Typebot, EvolutionBot, EvoAI or Chatwoot. Create/update/delete bots, adjust settings, change status, list sessions, ignore JIDs. Covers the `chatbot` domain.
 ---
 
-# Evolution API — Chatbots e Integrações de IA
+# Evolution API — Chatbots and AI Integrations
 
-Conecta uma instância WhatsApp a um motor de bot/IA. Cada provedor segue o **mesmo padrão de actions** (CRUD + settings + sessões). Siga `evolution-api-workflow`.
+Connects a WhatsApp instance to a bot/AI engine. Each provider follows the **same action pattern** (CRUD + settings + sessions). Follow `evolution-api-workflow`.
 
-## Provedores
+## Providers
 
 `openai` · `dify` · `flowise` · `n8n` · `typebot` · `evolutionBot` · `evoai` · `chatwoot`
 
-## Padrão de actions (por provedor `<p>`)
+## Action Pattern (per provider `<p>`)
 
-| actionId | R/W | O que faz |
-|----------|-----|-----------|
-| `chatbot.<p>.create` | write | Cria um bot |
-| `chatbot.<p>.find` | read | Lista bots do provedor |
-| `chatbot.<p>.fetch` | read | Detalhe de um bot |
-| `chatbot.<p>.update` | write | Atualiza um bot |
-| `chatbot.<p>.delete` | write ⚠️ | Remove um bot |
-| `chatbot.<p>.settings` | write | Define settings padrão (expire, delay, fallback, etc.) |
-| `chatbot.<p>.fetchSettings` | read | Lê settings padrão |
-| `chatbot.<p>.changeStatus` | write | Liga/desliga ou muda status do bot |
-| `chatbot.<p>.fetchSessions` | read | Sessões ativas |
-| `chatbot.<p>.ignoreJid` | write | Adiciona/remove JIDs ignorados |
+| actionId | R/W | What it does |
+|----------|-----|--------------|
+| `chatbot.<p>.create` | write | Creates a bot |
+| `chatbot.<p>.find` | read | Lists bots for the provider |
+| `chatbot.<p>.fetch` | read | Details of a bot |
+| `chatbot.<p>.update` | write | Updates a bot |
+| `chatbot.<p>.delete` | write ⚠️ | Removes a bot |
+| `chatbot.<p>.settings` | write | Sets default settings (expire, delay, fallback, etc.) |
+| `chatbot.<p>.fetchSettings` | read | Reads default settings |
+| `chatbot.<p>.changeStatus` | write | Enables/disables or changes the bot status |
+| `chatbot.<p>.fetchSessions` | read | Active sessions |
+| `chatbot.<p>.ignoreJid` | write | Adds/removes ignored JIDs |
 
-Exceções:
-- **OpenAI** tem actions extras de credenciais: `chatbot.openai.createCreds`, `findCreds`, `deleteCreds`, `getModels`.
-- **Typebot** tem `chatbot.typebot.start` (inicia um fluxo) além do padrão.
-- **Chatwoot** usa apenas `chatbot.chatwoot.set` (write) e `chatbot.chatwoot.find` (read).
+Exceptions:
+- **OpenAI** has extra credential actions: `chatbot.openai.createCreds`, `findCreds`, `deleteCreds`, `getModels`.
+- **Typebot** has `chatbot.typebot.start` (starts a flow) in addition to the standard pattern.
+- **Chatwoot** only uses `chatbot.chatwoot.set` (write) and `chatbot.chatwoot.find` (read).
 
-## Params típicos de `create`
+## Typical `create` Params
 
-Campos do bot (confirme com `get_action_schema`): `enabled`, `description`, `triggerType` (`all|keyword|none|advanced`), `triggerOperator` (`contains|equals|startsWith|endsWith|regex`), `triggerValue`, `expire`, `keywordFinish`, `delayMessage`, `unknownMessage`, `listeningFromMe`, `stopBotFromMe`, `keepOpen`, `debounceTime`, `ignoreJids`. Cada provedor adiciona campos próprios (ex.: OpenAI: model/credentials; Typebot: url/typebot; n8n/dify/flowise: endpoint/apiKey).
+Bot fields (confirm with `get_action_schema`): `enabled`, `description`, `triggerType` (`all|keyword|none|advanced`), `triggerOperator` (`contains|equals|startsWith|endsWith|regex`), `triggerValue`, `expire`, `keywordFinish`, `delayMessage`, `unknownMessage`, `listeningFromMe`, `stopBotFromMe`, `keepOpen`, `debounceTime`, `ignoreJids`. Each provider adds its own fields (e.g. OpenAI: model/credentials; Typebot: url/typebot; n8n/dify/flowise: endpoint/apiKey).
 
-## Regras
+## Rules
 
-- **`get_action_schema` é obrigatório aqui** — os campos específicos por provedor (URLs, API keys, model) variam muito; nunca chute.
-- **OpenAI:** crie credenciais (`createCreds`) antes do bot, e use `getModels` para escolher um model válido.
-- **Destrutivo:** `chatbot.<p>.delete` remove o bot. Confirme provedor + id antes.
-- **Credenciais** entram só nos params da action; trate como sensíveis.
+- **`get_action_schema` is required here** — provider-specific fields (URLs, API keys, model) vary greatly; never guess.
+- **OpenAI:** create credentials (`createCreds`) before the bot, and use `getModels` to pick a valid model.
+- **Destructive:** `chatbot.<p>.delete` removes the bot. Confirm provider + id before executing.
+- **Credentials** go only in the action params; treat them as sensitive.
 
-## Exemplos
+## Examples
 
-- "cria um bot OpenAI na instância suporte que responde tudo" → `createCreds` → `chatbot.openai.create` `{ triggerType: "all", ... }`
-- "lista os bots Typebot da instância vendas" → `chatbot.typebot.find` (read)
-- "desliga o bot dify X" → `chatbot.dify.changeStatus`
+- "create an OpenAI bot on the support instance that responds to everything" → `createCreds` → `chatbot.openai.create` `{ triggerType: "all", ... }`
+- "list Typebot bots on the sales instance" → `chatbot.typebot.find` (read)
+- "disable dify bot X" → `chatbot.dify.changeStatus`

@@ -1,73 +1,73 @@
 ---
 name: evolution-messaging
-description: Use ao enviar qualquer mensagem WhatsApp via Evolution API — texto, mídia (imagem/vídeo/documento/áudio), sticker, localização, contato, reação, enquete, lista, botões, template ou status. Cobre o domínio `message` via MCP evolution-api.
+description: Use when sending any WhatsApp message via Evolution API — text, media (image/video/document/audio), sticker, location, contact, reaction, poll, list, buttons, template or status. Covers the `message` domain via the evolution-api MCP.
 ---
 
-# Evolution API — Mensagens
+# Evolution API — Messages
 
-Enviar mensagem é **escrita** (`execute_write_action`) e é uma **ação externa irreversível**: confirme destinatário e conteúdo antes de disparar, e SEMPRE antes de envios em massa. Siga `evolution-api-workflow`.
+Sending a message is a **write** operation (`execute_write_action`) and an **irreversible external action**: confirm the recipient and content before sending, and ALWAYS before bulk sends. Follow `evolution-api-workflow`.
 
-## Pré-requisitos
+## Prerequisites
 
-1. Instância em estado `open` (cheque com `list_instances`).
-2. `number` com DDI, só dígitos: `5511999999999`. Para grupo, use o JID do grupo (`...@g.us`).
+1. Instance in `open` state (check with `list_instances`).
+2. `number` with country code, digits only: `5511999999999`. For groups, use the group JID (`...@g.us`).
 
-## Actions do domínio `message`
+## `message` Domain Actions
 
-| actionId | Envia |
+| actionId | Sends |
 |----------|-------|
-| `message.sendText` | Texto |
-| `message.sendMedia` | Imagem, vídeo, documento, áudio (via URL ou base64) |
-| `message.sendWhatsAppAudio` | Áudio de voz (PTT) |
-| `message.sendPtv` | Vídeo redondo (PTV) |
+| `message.sendText` | Text |
+| `message.sendMedia` | Image, video, document, audio (via URL or base64) |
+| `message.sendWhatsAppAudio` | Voice audio (PTT) |
+| `message.sendPtv` | Round video (PTV) |
 | `message.sendSticker` | Sticker |
-| `message.sendLocation` | Localização |
-| `message.sendContact` | Cartão de contato |
-| `message.sendReaction` | Reação (emoji) a uma mensagem |
-| `message.sendPoll` | Enquete |
-| `message.sendList` | Lista interativa |
-| `message.sendButtons` | Botões |
+| `message.sendLocation` | Location |
+| `message.sendContact` | Contact card |
+| `message.sendReaction` | Reaction (emoji) to a message |
+| `message.sendPoll` | Poll |
+| `message.sendList` | Interactive list |
+| `message.sendButtons` | Buttons |
 | `message.sendTemplate` | Template (WhatsApp Business) |
 | `message.sendStatus` | Status/stories |
 
-Todas são **write** → `execute_write_action`. Confirme params com `get_action_schema`.
+All are **write** → `execute_write_action`. Confirm params with `get_action_schema`.
 
-## Params comuns (sendText)
+## Common Params (sendText)
 
 ```json
 {
   "actionId": "message.sendText",
   "params": {
-    "instance": "meu-bot",
+    "instance": "my-bot",
     "number": "5511999999999",
-    "text": "Olá!",
+    "text": "Hello!",
     "delay": 1200,
     "linkPreview": true
   }
 }
 ```
-Opcionais: `quoted` (citar mensagem), `mentioned` (array de números a mencionar).
+Optional: `quoted` (quote a message), `mentioned` (array of numbers to mention).
 
-## Params comuns (sendMedia)
+## Common Params (sendMedia)
 
 ```json
 {
   "actionId": "message.sendMedia",
   "params": {
-    "instance": "meu-bot",
+    "instance": "my-bot",
     "number": "5511999999999",
     "mediatype": "image",
-    "media": "https://exemplo.com/foto.jpg",
-    "caption": "Veja isto",
-    "fileName": "foto.jpg"
+    "media": "https://example.com/photo.jpg",
+    "caption": "Check this out",
+    "fileName": "photo.jpg"
   }
 }
 ```
-`mediatype`: `image | document | video | audio | ptv`. `media` aceita URL ou base64.
+`mediatype`: `image | document | video | audio | ptv`. `media` accepts URL or base64.
 
-## Regras
+## Rules
 
-- **Confirme antes de enviar** — quem é o destinatário e qual o texto exato. Para listas de destinatários (broadcast), confirme a lista inteira e o conteúdo.
-- **Sem `actionId` chutado** — se não tem certeza do tipo (lista vs botões vs enquete), rode `search_actions` no domínio `message`.
-- **Erro de não-entrega?** Quase sempre instância não está `open` ou número sem DDI. Verifique ambos.
-- Para checar se um número tem WhatsApp antes de enviar: `chat.whatsappNumbers` (read) — ver skill `evolution-chat-groups`.
+- **Confirm before sending** — who is the recipient and what is the exact content. For recipient lists (broadcast), confirm the entire list and content.
+- **No guessed `actionId`** — if unsure of the type (list vs buttons vs poll), run `search_actions` on the `message` domain.
+- **Delivery error?** Almost always the instance is not `open` or the number is missing the country code. Check both.
+- To verify if a number has WhatsApp before sending: `chat.whatsappNumbers` (read) — see skill `evolution-chat-groups`.

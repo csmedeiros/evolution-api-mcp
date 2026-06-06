@@ -1,46 +1,46 @@
 ---
 name: evolution-instances
-description: Use ao criar, conectar (QR code), reiniciar, deslogar, deletar ou checar o estado de conexão de uma instância WhatsApp na Evolution API. Cobre o ciclo de vida da instância (domínio `instance`) via MCP evolution-api.
+description: Use when creating, connecting (QR code), restarting, logging out, deleting, or checking the connection state of a WhatsApp instance in the Evolution API. Covers the instance lifecycle (`instance` domain) via the evolution-api MCP.
 ---
 
-# Evolution API — Instâncias
+# Evolution API — Instances
 
-Uma **instância** é uma conexão WhatsApp. Tudo começa aqui: sem instância conectada (`open`), nenhuma mensagem é enviada. Siga o fluxo da skill `evolution-api-workflow`.
+An **instance** is a WhatsApp connection. Everything starts here: without a connected instance (`open`), no messages are sent. Follow the `evolution-api-workflow` skill flow.
 
-## Actions do domínio `instance`
+## `instance` Domain Actions
 
-| actionId | R/W | O que faz |
-|----------|-----|-----------|
-| `instance.fetchInstances` | read | Lista instâncias (é o que `list_instances` chama). |
-| `instance.connectionState` | read | Estado de uma instância: `open`, `connecting`, `close`. |
-| `instance.create` | write | Cria uma instância nova. |
-| `instance.connect` | write | Inicia conexão e retorna o **QR code** / pairing code. |
-| `instance.restart` | write | Reinicia a instância. |
-| `instance.setPresence` | write | Define presença global (available/unavailable). |
-| `instance.logout` | write | Desloga o WhatsApp (mantém a instância). ⚠️ destrutivo |
-| `instance.delete` | write | Remove a instância por completo. ⚠️ destrutivo |
+| actionId | R/W | What it does |
+|----------|-----|--------------|
+| `instance.fetchInstances` | read | Lists instances (what `list_instances` calls). |
+| `instance.connectionState` | read | State of an instance: `open`, `connecting`, `close`. |
+| `instance.create` | write | Creates a new instance. |
+| `instance.connect` | write | Initiates connection and returns the **QR code** / pairing code. |
+| `instance.restart` | write | Restarts the instance. |
+| `instance.setPresence` | write | Sets global presence (available/unavailable). |
+| `instance.logout` | write | Logs out of WhatsApp (keeps the instance). ⚠️ destructive |
+| `instance.delete` | write | Removes the instance entirely. ⚠️ destructive |
 
-> Confirme `actionId` e params exatos com `get_action_schema` antes de executar — esta tabela é mapa, não substituto.
+> Confirm the exact `actionId` and params with `get_action_schema` before executing — this table is a map, not a substitute.
 
-## Criar e conectar (fluxo típico)
+## Create and Connect (typical flow)
 
-1. `execute_write_action` com `instance.create`, params mínimos: `{ "instanceName": "meu-bot" }`. Opcionais úteis: `integration` (`WHATSAPP-BAILEYS` é o padrão), `qrcode: true`, `number`, `token`.
-2. `execute_write_action` com `instance.connect` (param `instance: "meu-bot"`) → retorna QR code (base64) ou pairing code. O usuário escaneia no WhatsApp do celular.
-3. `execute_read_action` com `instance.connectionState` até virar `open`.
+1. `execute_write_action` with `instance.create`, minimum params: `{ "instanceName": "my-bot" }`. Useful optionals: `integration` (`WHATSAPP-BAILEYS` is the default), `qrcode: true`, `number`, `token`.
+2. `execute_write_action` with `instance.connect` (param `instance: "my-bot"`) → returns QR code (base64) or pairing code. The user scans it in their WhatsApp mobile app.
+3. `execute_read_action` with `instance.connectionState` until it becomes `open`.
 
-## Estados de conexão
+## Connection States
 
-- `open` — conectada, pronta para enviar/receber. ✅
-- `connecting` — aguardando leitura do QR / pareando.
-- `close` — desconectada. Rode `instance.connect` de novo.
+- `open` — connected, ready to send/receive. ✅
+- `connecting` — waiting for QR scan / pairing.
+- `close` — disconnected. Run `instance.connect` again.
 
-## Destrutivo — confirme primeiro
+## Destructive — Confirm First
 
-`instance.logout` e `instance.delete` quebram a conexão. **Sempre confirme com o usuário** o nome exato da instância antes de executar. `delete` é irreversível: perde sessão e configs.
+`instance.logout` and `instance.delete` break the connection. **Always confirm with the user** the exact instance name before executing. `delete` is irreversible: loses session and configs.
 
-## Exemplos de intenção → action
+## Intent → Action Examples
 
-- "crie uma instância chamada vendas" → `instance.create` `{ instanceName: "vendas", qrcode: true }`
-- "me dá o QR code da instância vendas" → `instance.connect` `{ instance: "vendas" }`
-- "a instância vendas está conectada?" → `instance.connectionState` `{ instance: "vendas" }`
-- "deleta a instância de teste" → confirmar → `instance.delete` `{ instance: "teste" }`
+- "create an instance called sales" → `instance.create` `{ instanceName: "sales", qrcode: true }`
+- "give me the QR code for the sales instance" → `instance.connect` `{ instance: "sales" }`
+- "is the sales instance connected?" → `instance.connectionState` `{ instance: "sales" }`
+- "delete the test instance" → confirm → `instance.delete` `{ instance: "test" }`
