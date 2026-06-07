@@ -180,7 +180,8 @@ export function createMcpHttpApp(opts: CreateMcpHttpAppOptions): express.Applica
   }));
 
   // MCP endpoint — one transport instance per request, raw body buffering
-  app.all("/mcp", auth, async (req, res) => {
+  // Also handle root "/" as an alias for "/mcp" (some clients POST/GET to /)
+  async function mcpHandler(req: express.Request, res: express.Response) {
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on("close", async () => { await transport.close(); });
     const server = createServer();
@@ -197,7 +198,10 @@ export function createMcpHttpApp(opts: CreateMcpHttpAppOptions): express.Applica
       }
     }
     await transport.handleRequest(req, res, parsedBody);
-  });
+  }
+
+  app.all("/", auth, mcpHandler);
+  app.all("/mcp", auth, mcpHandler);
 
   return app;
 }
