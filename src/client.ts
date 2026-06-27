@@ -26,7 +26,11 @@ export async function callEvolution(
       if (params[p.name] !== undefined) {
         path = path.replace(`:${p.name}`, String(params[p.name]));
       } else if (p.required) {
-        return fail(`Param obrigatório ausente no path: ${p.name}`);
+        return fail(
+          `Param obrigatório ausente no path: ${p.name}. ` +
+            `Passe-o como argumento top-level "${p.name}" da tool ou dentro de params.${p.name} ` +
+            `(veja get_action_schema para o schema completo da action '${action.id}').`
+        );
       }
     }
 

@@ -111,6 +111,7 @@ function createServer(): McpServer {
     'Executa uma action de LEITURA (readOnly: true) da Evolution API. Recebe o actionId e os params necessários. Para saber quais params usar, chame search_actions ou get_action_schema primeiro. NÃO execute ações de escrita aqui — use execute_write_action. Opcional: clientFilter={field, contains, mode} para filtrar arrays grandes client-side antes do truncamento (ex: buscar contatos por pushName parcial).',
     {
       actionId: z.string(),
+      instance: z.string().optional().describe('Nome da instância (path param). Atalho para params.instance — tem precedência se ambos forem passados.'),
       params: z.record(z.unknown()).default({}),
       clientFilter: z.object({
         field: z.string(),
@@ -119,7 +120,7 @@ function createServer(): McpServer {
       }).optional(),
     },
     { readOnlyHint: true },
-    async ({ actionId, params, clientFilter }) => {
+    async ({ actionId, instance, params, clientFilter }) => {
       const action = catalog.find(a => a.id === actionId);
       if (!action) {
         return {
@@ -133,7 +134,8 @@ function createServer(): McpServer {
           content: [{ type: 'text' as const, text: 'Esta action é de escrita. Use execute_write_action.' }],
         };
       }
-      return callEvolution(action, params, clientFilter as ClientFilter | undefined);
+      const merged = instance !== undefined ? { ...params, instance } : params;
+      return callEvolution(action, merged, clientFilter as ClientFilter | undefined);
     }
   );
 
@@ -143,10 +145,11 @@ function createServer(): McpServer {
     'Executa uma action de ESCRITA/MUTAÇÃO (readOnly: false) da Evolution API — envia mensagens, cria/deleta instâncias, configura webhooks, etc. Requer confirmação do usuário para operações destrutivas. NÃO execute ações de leitura aqui — use execute_read_action.',
     {
       actionId: z.string(),
+      instance: z.string().optional().describe('Nome da instância (path param). Atalho para params.instance — tem precedência se ambos forem passados.'),
       params: z.record(z.unknown()).default({}),
     },
     { readOnlyHint: false, destructiveHint: true },
-    async ({ actionId, params }) => {
+    async ({ actionId, instance, params }) => {
       const action = catalog.find(a => a.id === actionId);
       if (!action) {
         return {
@@ -160,7 +163,8 @@ function createServer(): McpServer {
           content: [{ type: 'text' as const, text: 'Esta action é de leitura. Use execute_read_action.' }],
         };
       }
-      return callEvolution(action, params);
+      const merged = instance !== undefined ? { ...params, instance } : params;
+      return callEvolution(action, merged);
     }
   );
 
