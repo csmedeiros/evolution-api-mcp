@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { catalog } from './catalog.js';
-import { callEvolution } from './client.js';
+import { buildParams, callEvolution } from './client.js';
 import type { ClientFilter } from './types.js';
 
 // Validate required env var at boot
@@ -112,7 +112,8 @@ function createServer(): McpServer {
     {
       actionId: z.string(),
       instance: z.string().optional().describe('Nome da instância (path param). Atalho para params.instance — tem precedência se ambos forem passados.'),
-      params: z.record(z.unknown()).default({}),
+      params: z.union([z.record(z.unknown()), z.string()]).optional().describe('Parâmetros da action num único objeto plano (aceita também string JSON).'),
+      body: z.union([z.record(z.unknown()), z.string()]).optional().describe('Alias para params — mesclado por cima de params.'),
       clientFilter: z.object({
         field: z.string(),
         contains: z.string(),
@@ -120,7 +121,7 @@ function createServer(): McpServer {
       }).optional(),
     },
     { readOnlyHint: true },
-    async ({ actionId, instance, params, clientFilter }) => {
+    async ({ actionId, instance, params, body, clientFilter }) => {
       const action = catalog.find(a => a.id === actionId);
       if (!action) {
         return {
@@ -134,8 +135,7 @@ function createServer(): McpServer {
           content: [{ type: 'text' as const, text: 'Esta action é de escrita. Use execute_write_action.' }],
         };
       }
-      const merged = instance !== undefined ? { ...params, instance } : params;
-      return callEvolution(action, merged, clientFilter as ClientFilter | undefined);
+      return callEvolution(action, buildParams(params, body, instance), clientFilter as ClientFilter | undefined);
     }
   );
 
@@ -146,10 +146,11 @@ function createServer(): McpServer {
     {
       actionId: z.string(),
       instance: z.string().optional().describe('Nome da instância (path param). Atalho para params.instance — tem precedência se ambos forem passados.'),
-      params: z.record(z.unknown()).default({}),
+      params: z.union([z.record(z.unknown()), z.string()]).optional().describe('Parâmetros da action num único objeto plano (aceita também string JSON).'),
+      body: z.union([z.record(z.unknown()), z.string()]).optional().describe('Alias para params — mesclado por cima de params.'),
     },
     { readOnlyHint: false, destructiveHint: true },
-    async ({ actionId, instance, params }) => {
+    async ({ actionId, instance, params, body }) => {
       const action = catalog.find(a => a.id === actionId);
       if (!action) {
         return {
@@ -163,8 +164,7 @@ function createServer(): McpServer {
           content: [{ type: 'text' as const, text: 'Esta action é de leitura. Use execute_read_action.' }],
         };
       }
-      const merged = instance !== undefined ? { ...params, instance } : params;
-      return callEvolution(action, merged);
+      return callEvolution(action, buildParams(params, body, instance));
     }
   );
 

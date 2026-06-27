@@ -5,6 +5,41 @@ const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY ?? '';
 
 type McpResult = { isError: boolean; content: Array<{ type: 'text'; text: string }> };
 
+/** Some MCP clients (ex: Tess AI) serializam objetos aninhados como string JSON. */
+function coerceObject(value: unknown): Record<string, unknown> {
+  if (value === undefined || value === null) return {};
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') return {};
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+/**
+ * Monta o objeto de params final tolerando as formas que diferentes clients MCP enviam:
+ * params como objeto OU string JSON, body params sob uma chave `body`, e `instance` top-level.
+ */
+export function buildParams(
+  params: unknown,
+  body: unknown,
+  instance: string | undefined
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...coerceObject(params), ...coerceObject(body) };
+  if (instance !== undefined) merged.instance = instance;
+  return merged;
+}
+
 function ok(text: string): McpResult {
   return { isError: false, content: [{ type: 'text', text }] };
 }
