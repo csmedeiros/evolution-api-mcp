@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { catalog } from './catalog.js';
+import { searchActions } from './search.js';
 import { buildParams, callEvolution } from './client.js';
 import type { ClientFilter } from './types.js';
 
@@ -23,7 +24,7 @@ function createServer(): McpServer {
     {
       instructions:
         'Para operar a Evolution API: 1) Use list_instances para ver instâncias disponíveis. ' +
-        '2) Use search_actions para descobrir o actionId pelo que você quer fazer. ' +
+        '2) Use search_actions (com query em INGLÊS) para descobrir o actionId pelo que você quer fazer. ' +
         '3) Use get_action_schema para ver os params detalhados. ' +
         '4) Use execute_read_action para leituras e execute_write_action para escritas/mutações.',
     }
@@ -57,24 +58,19 @@ function createServer(): McpServer {
   // 2. search_actions
   server.tool(
     'search_actions',
-    'Busca ações da Evolution API por intenção em linguagem natural. Retorna id, method, path, summary e params de cada resultado. USE ESTA TOOL para descobrir o actionId correto antes de chamar execute_read_action ou execute_write_action.',
+    'Busca ações da Evolution API por relevância (ranking BM25 via MiniSearch) sobre id, summary, domain e params. Retorna id, method, path, summary e params de cada resultado. USE ESTA TOOL para descobrir o actionId correto antes de chamar execute_read_action ou execute_write_action.',
     {
-      query: z.string().describe("Intenção em linguagem natural, ex: 'enviar mensagem de texto'"),
+      query: z
+        .string()
+        .describe(
+          'Search query in ENGLISH ONLY. The action catalog is indexed in English, so always query with English keywords describing the intent (e.g. "send text message", "create group", "fetch contacts", "mark message as read"). Do NOT use Portuguese — Portuguese queries will rank poorly or return no results.'
+        ),
       domain: z.enum(DOMAINS).optional(),
       limit: z.number().int().min(1).max(30).default(10),
     },
     { readOnlyHint: true },
     async ({ query, domain, limit }) => {
-      const q = query.toLowerCase();
-      let results = catalog.filter(action => {
-        const matchesQuery =
-          action.id.toLowerCase().includes(q) ||
-          action.domain.toLowerCase().includes(q) ||
-          action.summary.toLowerCase().includes(q);
-        const matchesDomain = domain ? action.domain === domain : true;
-        return matchesQuery && matchesDomain;
-      });
-      results = results.slice(0, limit);
+      const results = searchActions(query, domain, limit);
       return {
         isError: false,
         content: [{ type: 'text' as const, text: JSON.stringify(results, null, 2) }],
